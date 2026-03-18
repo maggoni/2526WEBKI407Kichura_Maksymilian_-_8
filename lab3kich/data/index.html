@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Obsidian RGB Graph // Kichura</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --gold: #d4af37; --bg: #030303; --panel: #0a0a0a; }
+        body { background: var(--bg); color: var(--gold); font-family: 'Garamond', serif; text-align: center; margin: 0; padding: 20px; }
+        .container { border: 1px solid var(--gold); padding: 20px; background: var(--panel); max-width: 800px; margin: auto; box-shadow: 0 0 30px rgba(212, 175, 55, 0.1); }
+        canvas { background: #000; border: 1px solid #333; margin-top: 20px; }
+        .operator { margin-top: 20px; font-size: 0.8em; opacity: 0.5; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>>> CHROMATIC_LIVE_GRAPH</h2>
+        <canvas id="rgbChart" width="800" height="400"></canvas>
+        <div class="operator">OPERATOR: MAKSYMILIAN KICHURA</div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('rgbChart').getContext('2d');
+        const maxDataPoints = 50; // Скільки точок показувати одночасно
+
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array(maxDataPoints).fill(''),
+                datasets: [
+                    { label: 'Red', data: [], borderColor: '#ff0000', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+                    { label: 'Green', data: [], borderColor: '#00ff00', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+                    { label: 'Blue', data: [], borderColor: '#0000ff', borderWidth: 2, tension: 0.3, pointRadius: 0 }
+                ]
+            },
+            options: {
+                animation: false,
+                scales: {
+                    y: { min: 0, max: 255, grid: { color: '#222' } },
+                    x: { display: false }
+                },
+                plugins: { legend: { labels: { color: '#d4af37' } } }
+            }
+        });
+
+        const ws = new WebSocket(`ws://${window.location.hostname}/ws`);
+        ws.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            
+            // Додаємо нові дані в графік
+            chart.data.datasets[0].data.push(data.r);
+            chart.data.datasets[1].data.push(data.g);
+            chart.data.datasets[2].data.push(data.b);
+
+            // Видаляємо старі точки, щоб графік "біг"
+            if (chart.data.datasets[0].data.length > maxDataPoints) {
+                chart.data.datasets[0].data.shift();
+                chart.data.datasets[1].data.shift();
+                chart.data.datasets[2].data.shift();
+            }
+
+            chart.update();
+        };
+    </script>
+</body>
+</html>
